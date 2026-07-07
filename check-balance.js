@@ -5,6 +5,8 @@
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 const SLACK_WEBHOOK_URL = process.env.SLACK_WEBHOOK_URL;
 const THRESHOLD = parseFloat(process.env.THRESHOLD || "5"); // em dólares (créditos)
+// REPORT_BALANCE=true: envia o saldo atual no Slack (uso manual/teste), sem passar pela lógica de alerta
+const REPORT_BALANCE = process.env.REPORT_BALANCE === "true";
 
 async function main() {
   if (!OPENROUTER_API_KEY || !SLACK_WEBHOOK_URL) {
@@ -56,6 +58,12 @@ async function main() {
   const remaining = totalCredits - totalUsage;
 
   console.log("Total creditado:", totalCredits, "| Uso total:", totalUsage, "| Saldo restante:", remaining);
+
+  if (REPORT_BALANCE) {
+    await sendSlack(`💰 Saldo atual OpenRouter: *$${remaining.toFixed(2)}*`);
+    console.log("Relatório de saldo enviado ao Slack.");
+    return;
+  }
 
   if (remaining <= THRESHOLD) {
     await sendSlack(
