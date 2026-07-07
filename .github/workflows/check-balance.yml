@@ -2,8 +2,9 @@ name: Verificar saldo OpenRouter
 
 on:
   schedule:
-    # roda a cada 6 horas (ajuste o cron se quiser mais/menos frequente)
-    - cron: "0 */6 * * *"
+    # roda a cada 5 minutos (mínimo permitido pelo GitHub Actions;
+    # em horários de pico o GitHub pode atrasar execuções agendadas)
+    - cron: "*/5 * * * *"
   workflow_dispatch: {} # permite rodar manualmente pelo botão "Run workflow"
 
 jobs:
