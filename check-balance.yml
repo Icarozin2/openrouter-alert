@@ -1,0 +1,24 @@
+name: Verificar saldo OpenRouter
+
+on:
+  schedule:
+    # roda a cada 6 horas (ajuste o cron se quiser mais/menos frequente)
+    - cron: "0 */6 * * *"
+  workflow_dispatch: {} # permite rodar manualmente pelo botão "Run workflow"
+
+jobs:
+  check-balance:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Verificar saldo e alertar no Slack se necessário
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          THRESHOLD: "5" # valor em dólares que dispara o alerta - ajuste como quiser
+        run: node check-balance.js
