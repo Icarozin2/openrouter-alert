@@ -1,0 +1,16 @@
+name: Teste do webhook do Slack
+
+on:
+  workflow_dispatch: {} # só roda manualmente
+
+jobs:
+  slack-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Enviar mensagem de teste no Slack
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          curl -sf -X POST -H "Content-Type: application/json" \
+            -d '{"text":"✅ ok — teste do alerta de saldo OpenRouter funcionando!"}' \
+            "$SLACK_WEBHOOK_URL"
