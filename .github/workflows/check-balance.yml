@@ -20,5 +20,5 @@ jobs:
         env:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-          THRESHOLD: "5" # valor em dólares que dispara o alerta - ajuste como quiser
+          THRESHOLD: "0" # só alerta quando o saldo chegar a 0 ou menos
         run: node check-balance.js

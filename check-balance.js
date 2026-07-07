@@ -12,9 +12,16 @@ async function main() {
     process.exit(1);
   }
 
-  const res = await fetch("https://openrouter.ai/api/v1/key", {
-    headers: { Authorization: `Bearer ${OPENROUTER_API_KEY}` },
-  });
+  let res;
+  try {
+    res = await fetch("https://openrouter.ai/api/v1/credits", {
+      headers: { Authorization: `Bearer ${OPENROUTER_API_KEY}` },
+    });
+  } catch (err) {
+    console.error("Erro de rede ao consultar OpenRouter:", err.message);
+    await sendSlack(`⚠️ Falha de rede ao consultar saldo na OpenRouter: ${err.message}`);
+    process.exit(1);
+  }
 
   if (!res.ok) {
     const text = await res.text();
@@ -24,19 +31,31 @@ async function main() {
     process.exit(1);
   }
 
-  const data = await res.json();
+  let data;
+  try {
+    data = await res.json();
+  } catch (err) {
+    console.error("Resposta da OpenRouter não é JSON válido:", err.message);
+    await sendSlack("⚠️ Resposta inválida (JSON malformado) ao consultar saldo na OpenRouter.");
+    process.exit(1);
+  }
+
   const info = data.data;
 
-  // limit_remaining: crédito restante da conta/key (null = ilimitado)
-  const remaining = info.limit_remaining;
-  const usage = info.usage;
+  // total_credits: total já comprado/creditado na conta (all-time)
+  // total_usage: total já consumido (all-time)
+  const totalCredits = info?.total_credits;
+  const totalUsage = info?.total_usage;
 
-  console.log("Uso total:", usage, "| Restante:", remaining);
-
-  if (remaining === null) {
-    console.log("Sem limite definido nesta key — nada a alertar.");
-    return;
+  if (typeof totalCredits !== "number" || typeof totalUsage !== "number") {
+    console.error("Resposta da OpenRouter sem os campos esperados:", JSON.stringify(data));
+    await sendSlack("⚠️ Resposta inesperada da OpenRouter ao consultar saldo (campos total_credits/total_usage ausentes).");
+    process.exit(1);
   }
+
+  const remaining = totalCredits - totalUsage;
+
+  console.log("Total creditado:", totalCredits, "| Uso total:", totalUsage, "| Saldo restante:", remaining);
 
   if (remaining <= THRESHOLD) {
     await sendSlack(
@@ -51,11 +70,16 @@ async function main() {
 }
 
 async function sendSlack(text) {
-  await fetch(SLACK_WEBHOOK_URL, {
+  const res = await fetch(SLACK_WEBHOOK_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ text }),
   });
+  if (!res.ok) {
+    const body = await res.text();
+    console.error(`Falha ao enviar mensagem ao Slack (HTTP ${res.status}):`, body);
+    process.exitCode = 1;
+  }
 }
 
 main().catch((err) => {
